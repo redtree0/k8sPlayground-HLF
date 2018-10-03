@@ -1,0 +1,5 @@
+k8s_env
+.vagrant/*
+roles/*
+*.log
+*.retry

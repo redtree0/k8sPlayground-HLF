@@ -1,0 +1,29 @@
+---
+
+- hosts: master
+  become: yes
+  vars:
+     k8s_mode: "master"
+     nfs_exports: [ "/opt/share *(rw,sync,no_root_squash)" ]
+  roles:
+     - ansible-role-k8s
+     - ansible-role-nfs
+
+- hosts: worker
+  become: yes
+  vars:
+     k8s_mode: "worker"
+  roles:
+     - ansible-role-k8s
+     - ansible-role-nfs
+     - ansible-role-k8sHLF
+  tasks:
+     - name: create share directory
+       file:
+          path: /opt/share
+          state: directory
+     - name: nfs mount /opt/share
+       command: mount 192.168.99.20:/opt/share /opt/share
+       become: yes
+    
+    

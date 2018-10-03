@@ -1,0 +1,6 @@
+---
+- hosts: master
+  vars:
+    k8s_mode: "teardown"
+  roles:
+    - teardown

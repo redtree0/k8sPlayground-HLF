@@ -1,0 +1,6 @@
+- src: git+https://github.com/redtree0/ansible-role-k8s.git
+  version: master
+- src: git+https://github.com/redtree0/ansible-role-k8sHLF.git
+  version: master
+- src: git+https://github.com/geerlingguy/ansible-role-nfs.git
+  version: master
