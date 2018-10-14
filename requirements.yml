@@ -4,3 +4,5 @@
   version: master
 - src: git+https://github.com/geerlingguy/ansible-role-nfs.git
   version: master
+- src: git+https://github.com/geerlingguy/ansible-role-nodejs.git
+  version: master
