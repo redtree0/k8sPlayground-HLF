@@ -1,3 +1,6 @@
+setup:
+		ansible-playbook playbook.setup.yml -i inventory.ini
+
 cluster:
 		ansible-playbook playbook.kubecluster.yml -i inventory.ini
 

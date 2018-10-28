@@ -6,3 +6,7 @@
   version: master
 - src: git+https://github.com/geerlingguy/ansible-role-nodejs.git
   version: master
+- src: git+https://github.com/geerlingguy/ansible-role-docker.git
+  version: master
+- src: git+https://github.com/geerlingguy/ansible-role-ruby.git
+  version: master
