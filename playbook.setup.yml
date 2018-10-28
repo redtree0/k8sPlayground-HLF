@@ -1,0 +1,20 @@
+---
+
+- hosts: all
+  become: yes
+  vars:
+    docker_edition: 'ce'
+    docker_package: "docker-{{ docker_edition }}=17.03.2~ce-0~ubuntu-xenial"
+    docker_apt_repository: "deb [arch={{ docker_apt_arch }}] https://download.docker.com/linux/{{ ansible_distribution|lower }} xenial {{ docker_apt_release_channel }}"
+    # docker_apt_repository: "deb [arch={{ docker_apt_arch }}] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} {{ docker_apt_release_channel }}"
+    docker_package_state: present
+    docker_users: ['vagrant']
+    docker_install_compose: false
+  roles:
+    - ansible-role-docker
+    - ansible-role-nodejs
+
+- hosts: master
+  become: yes
+  roles:
+    - ansible-role-ruby

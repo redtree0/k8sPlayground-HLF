@@ -3,4 +3,4 @@
   vars:
     k8s_mode: "teardown"
   roles:
-    - teardown
+    - ansible-role-k8s
