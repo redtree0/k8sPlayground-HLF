@@ -1,0 +1,43 @@
+---
+- hosts: master
+  vars:
+    workdir: /home/{{ ansible_ssh_user }}/scripts/Fabric-on-K8S
+    repo: "https://github.com/WouldULike/Chaincode.git"
+    repo_name: "Chaincode"
+    nfsdir : "/opt/share/channel-artifacts"
+  tasks:
+    - name: "Check NFS Directory"
+      stat: "path={{ nfsdir }}/{{ repo_name }}"
+      register: "find_repo"
+
+    - name: "clone your chaincode {{ repo }}"
+      git: 
+        repo: "{{ repo }}"
+        version: master
+        dest: "/opt/share/channel-artifacts"
+      become: yes
+      when: not find_repo.stat.exists
+
+
+    - name: "get cli pod org1"
+      shell: "kubectl get pod -n org1 | grep cli | awk '{print $1}'"
+      # command: "echo $(kubectl get pod -n org1 | grep cli | awk '{print $1}')"
+      register: "find_cli"
+
+    - debug: msg="{{ find_cli.stdout }}"
+ 
+    - name: "Create genesis.block"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel create -o orderer0.orgorderer1:7050  -c mychannel -f ./channel-artifacts/channel.tx"
+      register: "test"
+    
+    - debug: msg="{{ test.stdout }}"
+
+    - name: "Join channel"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel join -b ./channel-artifacts/mychannel.block"
+      register: "test"
+    - debug: msg="{{ test.stdout }}"
+    - name: "Update channel"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel update -o orderer0.orgorderer1:7050 -c mychannel -f ./channel-artifacts/Org1MSPanchors.tx"
+      register: "test"
+    - debug: msg="{{ test.stdout }}"
+    
