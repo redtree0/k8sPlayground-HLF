@@ -7,6 +7,6 @@ clean:
 setupHLF :
 		ansible-playbook playbook/hyperledger/playbook.setupHLF.yml -i inventory.ini
 deployHLF :
-		ansible-playbook ./playbook/hyperledger/playbook.createNetwork.yml -i inventory.ini
+		ansible-playbook ./playbook/hyperledger/playbook.deployHLFNetwork.yml -i inventory.ini
 deleteHLF :
-		ansible-playbook ./playbook/hyperledger/playbook.hyperledger.yml -i inventory.ini
+		ansible-playbook ./playbook/hyperledger/playbook.deleteHLFNetwork.yml -i inventory.ini
