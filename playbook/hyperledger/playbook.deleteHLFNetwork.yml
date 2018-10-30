@@ -1,0 +1,13 @@
+---
+- hosts: master
+  vars:
+    workdir: /home/{{ ansible_ssh_user }}/scripts/Fabric-on-K8S
+    repo: "https://github.com/WouldULike/Chaincode.git"
+    repo_name: "Chaincode"
+    nfsdir : "/opt/share/channel-artifacts"
+  tasks:
+    # - name: "Delete your Hyperledger Fabric Network"
+    - name: "Delete your Hyperledger Fabric Network"
+      shell: "python3.5 transform/delete.py"
+      args:
+        chdir: "{{ workdir }}"

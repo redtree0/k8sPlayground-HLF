@@ -1,0 +1,66 @@
+---
+- hosts: master
+  vars:
+    workdir: /home/{{ ansible_ssh_user }}/scripts/Fabric-on-K8S
+    repo: "https://github.com/WouldULike/Chaincode.git"
+    repo_name: "Chaincode"
+    nfsdir : "/opt/share/channel-artifacts"
+    chaincode_name : 'blood-app'
+    chaincode_version: '1.0'
+  tasks:
+    - name: "Check NFS Directory"
+      stat: "path={{ nfsdir }}/{{ repo_name }}"
+      register: "find_repo"
+
+    - name: "Clone your chaincode {{ repo }}"
+      git: 
+        repo: "{{ repo }}"
+        version: master
+        dest: "{{ nfsdir }}/{{ repo_name }}"
+      become: yes
+      when: not find_repo.stat.exists
+
+    - name: "Deploy Hyperledger fabric from template file"
+      shell: "python3.5 transform/run.py"
+      # become: yes
+      register: "test"
+      args: 
+        chdir: "{{ workdir }}/setupCluster"
+    
+    - debug: msg="{{ test.stdout }}"
+    # - debug: msg="{{ test.stderr }}"
+    - name: "Wait to complete deployment"
+      pause:
+        minutes: 10
+
+    - name: "get cli pod org1"
+      shell: "kubectl get pod -n org1 | grep cli | awk '{print $1}'"
+      # command: "echo $(kubectl get pod -n org1 | grep cli | awk '{print $1}')"
+      register: "find_cli"
+
+    - debug: msg="{{ find_cli.stdout }}"
+      
+ 
+    - name: "Create genesis.block"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel create -o orderer0.orgorderer1:7050  -c mychannel -f ./channel-artifacts/channel.tx"
+      register: "test"
+    
+    - debug: msg="{{ test.stdout }}"
+
+    - name: "Move genesis.block in channel artifects"
+      command: "kubectl exec {{ find_cli.stdout }} -n org1 -- mv mychannel.block ./channel-artifacts/mychannel.block"
+
+    - name: "Join channel"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel join -b ./channel-artifacts/mychannel.block"
+      register: "test"
+    - debug: msg="{{ test.stdout }}"
+    - name: "Update channel"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer channel update -o orderer0.orgorderer1:7050 -c mychannel -f ./channel-artifacts/Org1MSPanchors.tx"
+      register: "test"
+    - debug: msg="{{ test.stdout }}"
+    
+    - name: "Install chaincode"
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 --  peer chaincode install -n {{ chaincode_name }} -v {{ chaincode_version }} -p github.com/hyperledger/fabric/peer/channel-artifacts/Chaincode/{{ chaincode_name }}"
+
+    - name: "Instantiate chaincode" 
+      shell: "kubectl exec {{ find_cli.stdout }} -n org1 -- peer chaincode instantiate -o orderer0.orgorderer1:7050 -C mychannel-n {{ chaincode_name }} -v {{ chaincode_version }} -c  '{'Args': ['initLedger']}'"

@@ -3,3 +3,4 @@ k8s_env
 roles/*
 *.log
 *.retry
+.vscode

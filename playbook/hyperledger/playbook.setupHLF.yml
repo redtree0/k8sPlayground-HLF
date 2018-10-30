@@ -1,0 +1,127 @@
+---
+- hosts: master
+  vars:
+    workdir: /home/{{ ansible_ssh_user }}/scripts/Fabric-on-K8S
+    repo: "https://github.com/WouldULike/Chaincode.git"
+    repo_name: "Chaincode"
+    nfsdir : "/opt/share/channel-artifacts"
+  environment:
+      FABRIC_CFG_PATH: "{{ workdir }}/setupCluster"
+  tasks:
+ 
+
+    - name: Ansible chmod +x permission file glob
+      find:
+        paths: "{{ workdir }}"
+        patterns: "*.sh"
+      register: files_to_x
+      # when: not python3_5.stat.exists
+
+    - name: Ansible chmod +x permission file glob
+      become: yes
+      file:
+        path: "{{ item.path }}" 
+        state: absent
+        mode: 0611
+      with_items: "{{ files_to_x.files }}"
+      # when: not python3_5.stat.exists
+
+    - name: "Check Python3.5"
+      stat: "path=/usr/bin/python3.5"
+      register: "python3_5"
+
+    - name: "Unarchive a file that needs to be downloaded Python3.5 "
+      state: "present"
+      unarchive:
+        src: "https://www.python.org/ftp/python/3.5.0/Python-3.5.0.tgz"
+        dest: "{{ workdir }}"
+        remote_src: yes
+      when: not python3_5.stat.exists
+
+    - name: "Run ./configure python3.5 "
+      state: "present"
+      command: "./configure"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/Python-3.5.0"
+      when: not python3_5.stat.exists
+
+    - name: "Run make python3.5 "
+      state: "present"
+      command: "make"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/Python-3.5.0"
+      when: not python3_5.stat.exists
+
+    - name: "Run make install python3.5 "
+      state: "present"
+      command: "make install"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/Python-3.5.0"
+      when: not python3_5.stat.exists
+
+    - name: "link python3.5 directory to bin "
+      state: "present"
+      command: "ln -fs /opt/Python-3.5.0/Python /usr/bin/python3.5"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/Python-3.5.0"
+      when: not python3_5.stat.exists
+
+    - name: "Check Hyperledger /bin tools"
+      stat: "path={{ workdir }}/bin"
+      register: "hlf"
+
+    - name: "Unarchive a file that needs to be downloaded Hyperledger "
+      unarchive:
+        src: "https://nexus.hyperledger.org/content/repositories/releases/org/hyperledger/fabric/hyperledger-fabric/linux-amd64-1.0.0/hyperledger-fabric-linux-amd64-1.0.0.tar.gz"
+        dest: "{{ workdir }}"
+        remote_src: yes
+
+    - name: "set nfs host hyperledger templates namespace "
+      replace:
+        path: "{{ workdir }}/setupCluster/templates/fabric_1_0_template_pod_namespace.yaml"
+        regexp: '(\s+)10.112.122.9(\s+.*)?$'
+        replace: " {{ ansible_host }}"
+        backup: yes
+
+    - name: "set nfs host hyperledger templates cli "
+      replace:
+        path: "{{ workdir }}/setupCluster/templates/fabric_1_0_template_pod_cli.yaml"
+        regexp: '(\s+)10.112.122.9(\s+.*)?$'
+        replace: " {{ ansible_host }}"
+        backup: yes
+
+    - name: "Generate hyperledger config all"
+      shell: "bash -c ./generateALL.sh"
+      args:
+        chdir: "{{ workdir }}/setupCluster"
+      
+    - name: "generate configx channelTX"
+      shell: "../bin/configtxgen -profile TwoOrgsChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID mychannel "
+      args:
+        chdir: "{{ workdir }}/setupCluster"
+      
+    - name: "generate configx"
+      shell: "../bin/configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org1MSPanchors.tx -channelID mychannel -asOrg Org1MSP "
+      args:
+        chdir: "{{ workdir }}/setupCluster"
+    
+    - name: "generate configx"
+      shell: "../bin/configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/Org2MSPanchors.tx -channelID mychannel -asOrg Org2MSP "
+      args:
+        chdir: "{{ workdir }}/setupCluster"
+
+    - name: "cp channel-artifacts"
+      shell: "cp -r ./channel-artifacts /opt/share/"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/setupCluster"
+
+    - name: "cp crypto-config"
+      shell: "cp -r ./crypto-config /opt/share/"
+      become: yes
+      args:
+        chdir: "{{ workdir }}/setupCluster"

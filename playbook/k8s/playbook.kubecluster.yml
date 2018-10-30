@@ -16,6 +16,7 @@
      k8s_mode: "worker"
   roles:
      - ansible-role-k8s
+     - ansible-role-k8sHLF
      - ansible-role-nfs
   tasks:
      - name: create share directory
